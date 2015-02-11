@@ -14,10 +14,10 @@
             <ColumnDefinition Width="409"/>
             <ColumnDefinition Width="615"/>
         </Grid.ColumnDefinitions>
-        <WindowsFormsHost Grid.Row="0" Grid.Column="0" x:Name="container" HorizontalAlignment="Left" Height="350" Margin="10,10,0,0" Initialized="start"
-			  VerticalAlignment="Top" Width="384">
+        <WindowsFormsHost Grid.Row="0" Grid.Column="0" x:Name="container" HorizontalAlignment="Left" Margin="10,10,0,0" Initialized="start"
+			  VerticalAlignment="Top" Width="300" Height="300">
 
-            <wf:Panel x:Name="preview" Width="320" Height="200"/>
+            <wf:Panel x:Name="preview"/>
 
         </WindowsFormsHost>
         <Button Grid.Row="0" Grid.Column="1" Margin="10,10,282,174" Click="Button_Click"/>

@@ -29,7 +29,7 @@ namespace CameraWPF
         private void start(object sender, EventArgs e)
         {
             camera = Capture.DetectCameras()[0];
-            captura = new Capture(camera, 1280, 720);
+            captura = new Capture(camera, 100, 100);
             captura.previewElement = preview;
             captura.Start();
         }

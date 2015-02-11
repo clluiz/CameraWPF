@@ -169,6 +169,8 @@ namespace camera
         private void ConfigurePreview(IBaseFilter filter, System.Windows.Forms.Control preview)
         {
             int hr;
+            preview.Width = this.Width;
+            preview.Height = this.Height;
             IVMRFilterConfig9 vmr9Config = filter as IVMRFilterConfig9;
             hr = vmr9Config.SetRenderingMode(VMR9Mode.Windowless);
             DsError.ThrowExceptionForHR(hr);
@@ -224,6 +226,7 @@ namespace camera
             media.majorType = MediaType.Video;
             media.subType = MediaSubType.RGB24;
             media.formatType = FormatType.VideoInfo;
+           
             int hr = sg.SetMediaType(media);
             DsError.ThrowExceptionForHR(hr);
         }
@@ -253,6 +256,11 @@ namespace camera
         public void Stop()
         {
             (filterGraph as IMediaControl).Stop();
+        }
+
+        public void Resume()
+        {
+            (filterGraph as IMediaControl).Run();
         }
 
         /// <summary>
