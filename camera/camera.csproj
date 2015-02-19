@@ -34,6 +34,10 @@
     <Reference Include="DirectShowLib-2005">
       <HintPath>..\..\..\..\..\Downloads\DirectShowLibV2-1\lib\DirectShowLib-2005.dll</HintPath>
     </Reference>
+    <Reference Include="Paint, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\PaintWPF\Paint\bin\Debug\Paint.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />

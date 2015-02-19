@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using camera;
+using System.Windows.Controls;
 
 namespace CameraWPF
 {
@@ -29,7 +30,7 @@ namespace CameraWPF
         private void start(object sender, EventArgs e)
         {
             camera = Capture.DetectCameras()[0];
-            captura = new Capture(camera, 100, 100);
+            captura = new Capture(camera, 320, 240);
             captura.previewElement = preview;
             captura.Start();
         }
@@ -49,21 +50,27 @@ namespace CameraWPF
 
             // capture image
             m_ip = captura.GetFrameBytes();
-            BitmapSource b = BitmapSource.Create(captura.Width, captura.Height, 96d, 96d, PixelFormats.Bgr24, null, m_ip, captura.Stride);
+            //snap.Blah(m_ip);
+           // BitmapSource b = BitmapSource.Create(captura.Width, captura.Height, 96d, 96d, PixelFormats.Bgr24, null, m_ip, captura.Stride);
             // If the image is upsidedown
-            snap.Source = b;
-            snap.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
-            ScaleTransform flipTrans = new ScaleTransform();
-            //flipTrans.ScaleX = -1;
-            flipTrans.ScaleY = -1;
-            snap.RenderTransform = flipTrans;
+            //snap.Source = b;
+            //snap.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
+            //ScaleTransform flipTrans = new ScaleTransform();
+            //flipTrans.ScaleY = -1;
+            //snap.RenderTransform = flipTrans;
+
+            //System.Windows.Controls.Image img = new System.Windows.Controls.Image();
+            //img.Source = b;
+            //Capture.FlipVertical(img);
+            snap.SetImage(captura.GetFrameAsImage());
+            
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            snap.Source = captura.GetFrameAsImage();//captura.SaveFrameToFile("imagem.jpeg").Source;
-            Capture.FlipVertical(snap);
-            
+            //snap.Source = captura.GetFrameAsImage();
+            //Capture.FlipVertical(snap);
+            snap.Save("imagem.jpg");
         }
     }
 }

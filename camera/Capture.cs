@@ -296,11 +296,22 @@ namespace camera
         /// Retorna o frame como um BitmapSource que pode ser atribuido a uma imagem
         /// </summary>
         /// <returns></returns>
-        public BitmapSource GetFrameAsImage()
+        public BitmapSource GetFrameAsBitmapSource()
         {
             byte[] bytes = this.GetFrameBytes();
             BitmapSource bitmap = BitmapSource.Create(this.width, this.height, 96d, 96d, PixelFormats.Bgr24, null, bytes, this.stride);
             return bitmap;
+        }
+
+        public System.Windows.Controls.Image GetFrameAsImage()
+        {
+            byte[] bytes = this.GetFrameBytes();
+            BitmapSource bitmap = BitmapSource.Create(this.width, this.height, 96d, 96d, PixelFormats.Bgr24, null, bytes, this.stride);
+
+            System.Windows.Controls.Image image = new System.Windows.Controls.Image();
+            image.Source = bitmap;
+            Capture.FlipVertical(image);
+            return image;
         }
 
         /// <summary>
@@ -313,7 +324,7 @@ namespace camera
             System.Windows.Controls.Image image = new System.Windows.Controls.Image();
             image.Width = this.width;
             image.Height = this.height;
-            image.Source = this.GetFrameAsImage();
+            image.Source = this.GetFrameAsBitmapSource();
 
             JpegBitmapEncoder jpegEncoder = new JpegBitmapEncoder();
             jpegEncoder.Frames.Add(BitmapFrame.Create(image.Source as BitmapSource));
