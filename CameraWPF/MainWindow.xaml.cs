@@ -49,28 +49,16 @@ namespace CameraWPF
             }
 
             // capture image
-            m_ip = captura.GetFrameBytes();
-            //snap.Blah(m_ip);
-           // BitmapSource b = BitmapSource.Create(captura.Width, captura.Height, 96d, 96d, PixelFormats.Bgr24, null, m_ip, captura.Stride);
-            // If the image is upsidedown
-            //snap.Source = b;
-            //snap.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
-            //ScaleTransform flipTrans = new ScaleTransform();
-            //flipTrans.ScaleY = -1;
-            //snap.RenderTransform = flipTrans;
-
-            //System.Windows.Controls.Image img = new System.Windows.Controls.Image();
-            //img.Source = b;
-            //Capture.FlipVertical(img);
-            snap.SetImage(captura.GetFrameAsImage());
-            
+            //snap.SetImage(captura.GetFrameAsImage());
+            Boolean b = snap.HasImage();
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             //snap.Source = captura.GetFrameAsImage();
             //Capture.FlipVertical(snap);
-            snap.Save("imagem.jpg");
+            //snap.Save("imagem.jpg");
+            captura.SaveFrameToFile("foto.jpeg");
         }
     }
 }

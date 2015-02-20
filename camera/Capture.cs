@@ -400,10 +400,10 @@ namespace camera
                 capturar = false;
                 Debug.Assert(buffer != null, "Unitialized buffer");
 
-                // Save the buffer
+                // Salva o buffer
                 System.Runtime.InteropServices.Marshal.Copy(pBuffer, buffer, 0, BufferLen);
 
-                // Picture is ready.
+                // Foto está pronta
                 m_PictureReady.Set();
             }
 
