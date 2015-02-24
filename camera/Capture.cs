@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -116,13 +115,12 @@ namespace camera
                 // pega as resolucoes disponiveis
                 GetMediaTypes(pinCaptura);
                 //
+
+                /// TODO: Arrumar uma forma de detectar e setar automaticamente a melhor resolução
+                /// possível
                 AMMediaType media = medias[10];
 
                 VideoInfoHeader videoInfoHeader = (VideoInfoHeader)Marshal.PtrToStructure(media.formatPtr, typeof(VideoInfoHeader));
-
-                //resolucoesDisponiveis = GetResolutions(pinCaptura);
-
-                //MessageBox.Show(videoInfoHeader.BmiHeader.Width.ToString() + "x" + videoInfoHeader.BmiHeader.Height.ToString() + "x" + videoInfoHeader.BmiHeader.BitCount.ToString());
 
                 (pinCaptura as IAMStreamConfig).SetFormat(media);
 
@@ -299,9 +297,6 @@ namespace camera
             // Grab the size info
             VideoInfoHeader videoInfoHeader = (VideoInfoHeader)Marshal.PtrToStructure(media.formatPtr, typeof(VideoInfoHeader));
 
-            // código para pegar a maior resolução possivel
-            //Resolution best = resolucoesDisponiveis[resolucoesDisponiveis.Count - 1];
-
             width = videoInfoHeader.BmiHeader.Width;
             height = videoInfoHeader.BmiHeader.Height;
             stride = width * (videoInfoHeader.BmiHeader.BitCount / 8);
@@ -416,7 +411,6 @@ namespace camera
         public System.Windows.Controls.Image SaveFrameToFile(string path)
         {
             System.Windows.Controls.Image image = new System.Windows.Controls.Image();
-            //MessageBox.Show(this.width.ToString() + "x" + this.height.ToString());
             image.Width = this.width;
             image.Height = this.height;
             image.Source = this.GetFrameAsBitmapSource();
@@ -485,19 +479,10 @@ namespace camera
         /// <param name="pBuffer">Bytes da imamge</param>
         /// <param name="BufferLen">Tamanho do buffer</param>
         /// <returns></returns>
-        
-
-        private String b = "";
-
         int ISampleGrabberCB.BufferCB(double SampleTime, IntPtr pBuffer, int BufferLen)
         {
             // Note that we depend on only being called once per call to Click.  Otherwise
             // a second call can overwrite the previous image.
-
-            //if(b == "")
-            //{
-            //    MessageBox.Show("Stride = " + this.stride + ";\n" + "Width = " + this.width + ";\n" + "Height = " + this.height + "Bufferlen = " + BufferLen.ToString());
-            //}
 
             Debug.Assert(BufferLen == Math.Abs(stride) * height, "Incorrect buffer length");
             if (capturar)
