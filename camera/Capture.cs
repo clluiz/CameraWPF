@@ -6,6 +6,7 @@ using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -24,7 +25,7 @@ namespace camera
         #endregion
 
         // altura e largura da imagem a ser capturada
-        private int width;
+        private int width = 0;
         public int Width
         {
             get
@@ -33,7 +34,7 @@ namespace camera
             }
         }
 
-        private int height;
+        private int height = 0;
         public int Height
         {
             get
@@ -55,6 +56,8 @@ namespace camera
         private DsDevice camera;
         private Boolean capturar;
         private IVMRWindowlessControl9 vmr9Control;
+        private int previewWidth;
+        private int previewHeight;
         public System.Windows.Forms.Control previewElement;
 
         private ManualResetEvent m_PictureReady = null;
@@ -67,8 +70,8 @@ namespace camera
         /// <param name="picHeight">Altura da foto</param>
         public Capture(DsDevice camera, int picWidth, int picHeight)
         {
-            this.width = picWidth;
-            this.height = picHeight;
+            this.previewWidth = picWidth;
+            this.previewHeight = picHeight;
             this.camera = camera;
             m_PictureReady = new ManualResetEvent(false);
         }
@@ -101,64 +104,152 @@ namespace camera
         /// <param name="preview">Componente que receberá as imagens</param>
         private void BuildGraph(System.Windows.Forms.Control preview)
         {
-            int hr;
-            filterGraph = new FilterGraph() as IFilterGraph2;
-            hr = filterGraph.AddSourceFilterForMoniker(camera.Mon, null, camera.Name, out this.captureFilter);
-            DsError.ThrowExceptionForHR(hr);
+            try
+            {
+                int hr;
+                filterGraph = new FilterGraph() as IFilterGraph2;
+                hr = filterGraph.AddSourceFilterForMoniker(camera.Mon, null, camera.Name, out this.captureFilter);
+                DsError.ThrowExceptionForHR(hr);
 
-            IPin pinCaptura = DsFindPin.ByCategory(captureFilter, PinCategory.Capture, 0);
+                IPin pinCaptura = DsFindPin.ByCategory(captureFilter, PinCategory.Capture, 0);
 
-            // filtro em que será ligada a saída do captureFilter
-            smartTee = (IBaseFilter)new SmartTee();
+                // pega as resolucoes disponiveis
+                GetMediaTypes(pinCaptura);
+                //
+                AMMediaType media = medias[10];
 
-            hr = filterGraph.AddFilter(smartTee, "SmartTee");
-            DsError.ThrowExceptionForHR(hr);
+                VideoInfoHeader videoInfoHeader = (VideoInfoHeader)Marshal.PtrToStructure(media.formatPtr, typeof(VideoInfoHeader));
 
-            IPin pinPreview = DsFindPin.ByName(smartTee, "Preview");
-            IPin pinInput = DsFindPin.ByDirection(smartTee, PinDirection.Input, 0);
+                //resolucoesDisponiveis = GetResolutions(pinCaptura);
 
-            hr = filterGraph.Connect(pinCaptura, pinInput);
-            DsError.ThrowExceptionForHR(hr);
+                //MessageBox.Show(videoInfoHeader.BmiHeader.Width.ToString() + "x" + videoInfoHeader.BmiHeader.Height.ToString() + "x" + videoInfoHeader.BmiHeader.BitCount.ToString());
 
-            // adiciona o filtro para renderizar o preview
-            renderFilter = (IBaseFilter)new VideoMixingRenderer9();
+                (pinCaptura as IAMStreamConfig).SetFormat(media);
 
-            ConfigurePreview(renderFilter, preview);
+                // filtro em que será ligada a saída do captureFilter
+                smartTee = (IBaseFilter)new SmartTee();
 
-            hr = filterGraph.AddFilter(renderFilter, "Renderer");
-            DsError.ThrowExceptionForHR(hr);
 
-            IPin pinEntradaRenderer = DsFindPin.ByDirection(renderFilter, PinDirection.Input, 0);
-            hr = filterGraph.Connect(pinPreview, pinEntradaRenderer);
-            DsError.ThrowExceptionForHR(hr);
+                hr = filterGraph.AddFilter(smartTee, "SmartTee");
+                DsError.ThrowExceptionForHR(hr);
 
-            int Width, Height, ARWidth, ARHeight;
-            hr = vmr9Control.GetNativeVideoSize(out Width, out Height, out ARWidth, out ARHeight);
-            DsError.ThrowExceptionForHR(hr);
+                IPin pinPreview = DsFindPin.ByName(smartTee, "Preview");
+                IPin pinInput = DsFindPin.ByDirection(smartTee, PinDirection.Input, 0);
 
-            // adiciona o SampleGrabber para captuar os frames
-            grabFilter = new SampleGrabber() as ISampleGrabber;
+                hr = filterGraph.Connect(pinCaptura, pinInput);
+                DsError.ThrowExceptionForHR(hr);
 
-            ConfigureSampleGrabber(grabFilter);
+                // adiciona o filtro para renderizar o preview
+                renderFilter = (IBaseFilter)new VideoMixingRenderer9();
 
-            hr = filterGraph.AddFilter(grabFilter as IBaseFilter, "Sample Grabber");
-            DsError.ThrowExceptionForHR(hr);
+                ConfigurePreview(renderFilter, preview);
 
-            IPin saidaSmartTee = DsFindPin.ByName(smartTee, "Capture");
-            IPin entradaGrabber = DsFindPin.ByDirection(grabFilter as IBaseFilter, PinDirection.Input, 0);
+                hr = filterGraph.AddFilter(renderFilter, "Renderer");
+                DsError.ThrowExceptionForHR(hr);
 
-            hr = filterGraph.Connect(saidaSmartTee, entradaGrabber);
-            DsError.ThrowExceptionForHR(hr);
-            SaveSizeInfo(grabFilter);
+                IPin pinEntradaRenderer = DsFindPin.ByDirection(renderFilter, PinDirection.Input, 0);
+                hr = filterGraph.Connect(pinPreview, pinEntradaRenderer);
+                DsError.ThrowExceptionForHR(hr);
 
-            hr = grabFilter.SetBufferSamples(false);
-            DsError.ThrowExceptionForHR(hr);
+                int Width, Height, ARWidth, ARHeight;
+                hr = vmr9Control.GetNativeVideoSize(out Width, out Height, out ARWidth, out ARHeight);
+                DsError.ThrowExceptionForHR(hr);
 
-            hr = grabFilter.SetOneShot(false);
-            DsError.ThrowExceptionForHR(hr);
+                // adiciona o SampleGrabber para captuar os frames
+                grabFilter = new SampleGrabber() as ISampleGrabber;
 
-            hr = grabFilter.SetCallback(this, 1);
-            DsError.ThrowExceptionForHR(hr);
+                ConfigureSampleGrabber(grabFilter, media);
+
+                hr = filterGraph.AddFilter(grabFilter as IBaseFilter, "Sample Grabber");
+                DsError.ThrowExceptionForHR(hr);
+
+                IPin saidaSmartTee = DsFindPin.ByName(smartTee, "Capture");
+                IPin entradaGrabber = DsFindPin.ByDirection(grabFilter as IBaseFilter, PinDirection.Input, 0);
+
+                hr = filterGraph.Connect(saidaSmartTee, entradaGrabber);
+
+                DsError.ThrowExceptionForHR(hr);
+                SaveSizeInfo(grabFilter);
+
+                hr = grabFilter.SetBufferSamples(false);
+                DsError.ThrowExceptionForHR(hr);
+
+                hr = grabFilter.SetOneShot(false);
+                DsError.ThrowExceptionForHR(hr);
+
+                hr = grabFilter.SetCallback(this, 1);
+                DsError.ThrowExceptionForHR(hr);
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
+        }
+
+        private List<Resolution> resolucoesDisponiveis;
+        private List<AMMediaType> medias;
+
+        private void GetMediaTypes(IPin pin)
+        {
+            IAMStreamConfig streamConfig = pin as IAMStreamConfig;
+            int iC = 0, iS = 0;
+            streamConfig.GetNumberOfCapabilities(out iC, out iS);
+
+            IntPtr ptr;
+            ptr = Marshal.AllocCoTaskMem(iS);
+
+            medias = new List<AMMediaType>();
+            for (var i = 0; i < iC; i++)
+            {
+                AMMediaType m;
+                streamConfig.GetStreamCaps(i, out m, ptr);
+                medias.Add(m);
+            }
+        }
+
+        private List<Resolution> GetResolutions(IPin pin)
+        {
+            try
+            {
+                int hr;
+                int max = 0;
+                int bitCount = 0;
+                List<Resolution> resolutions = new List<Resolution>();
+                VideoInfoHeader v = new VideoInfoHeader();
+                IEnumMediaTypes mediaTypeEnum;
+                hr = pin.EnumMediaTypes(out mediaTypeEnum);
+
+                AMMediaType[] mediaTypes = new AMMediaType[1];
+                IntPtr fetched = IntPtr.Zero;
+
+                hr = mediaTypeEnum.Next(1, mediaTypes, fetched);
+                String rels = "";
+
+                while (fetched != null && mediaTypes[0] != null)
+                {
+                    Marshal.PtrToStructure(mediaTypes[0].formatPtr, v);
+                    if (v.BmiHeader.Size != 0 && v.BmiHeader.BitCount != 0)
+                    {
+                        if (v.BmiHeader.BitCount > bitCount)
+                        {
+                            max = 0;
+                            bitCount = v.BmiHeader.BitCount;
+                        }
+                        resolutions.Add(new Resolution(v.BmiHeader.Width, v.BmiHeader.Height, bitCount));
+                        rels += "\n" + v.BmiHeader.Width + "x" + v.BmiHeader.Height + "x" + bitCount.ToString() + ";";
+                        if (v.BmiHeader.Width > max || v.BmiHeader.Height > max)
+                            max = (Math.Max(v.BmiHeader.Width, v.BmiHeader.Height));
+                    }
+                    hr = mediaTypeEnum.Next(1, mediaTypes, fetched);
+                }
+                MessageBox.Show(rels);
+                return resolutions;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+                return new List<Resolution>();
+            }
         }
 
         /// <summary>
@@ -169,8 +260,8 @@ namespace camera
         private void ConfigurePreview(IBaseFilter filter, System.Windows.Forms.Control preview)
         {
             int hr;
-            preview.Width = this.Width;
-            preview.Height = this.Height;
+            preview.Width = this.previewWidth;
+            preview.Height = this.previewHeight;
             IVMRFilterConfig9 vmr9Config = filter as IVMRFilterConfig9;
             hr = vmr9Config.SetRenderingMode(VMR9Mode.Windowless);
             DsError.ThrowExceptionForHR(hr);
@@ -207,6 +298,10 @@ namespace camera
 
             // Grab the size info
             VideoInfoHeader videoInfoHeader = (VideoInfoHeader)Marshal.PtrToStructure(media.formatPtr, typeof(VideoInfoHeader));
+
+            // código para pegar a maior resolução possivel
+            //Resolution best = resolucoesDisponiveis[resolucoesDisponiveis.Count - 1];
+
             width = videoInfoHeader.BmiHeader.Width;
             height = videoInfoHeader.BmiHeader.Height;
             stride = width * (videoInfoHeader.BmiHeader.BitCount / 8);
@@ -219,9 +314,8 @@ namespace camera
         /// Configura o filtro para fazer a captura dos bytes da imagem
         /// </summary>
         /// <param name="sg"></param>
-        private void ConfigureSampleGrabber(ISampleGrabber sg)
+        private void ConfigureSampleGrabber(ISampleGrabber sg, AMMediaType _media)
         {
-
             AMMediaType media = new AMMediaType();
             media.majorType = MediaType.Video;
             media.subType = MediaSubType.RGB24;
@@ -322,6 +416,7 @@ namespace camera
         public System.Windows.Controls.Image SaveFrameToFile(string path)
         {
             System.Windows.Controls.Image image = new System.Windows.Controls.Image();
+            //MessageBox.Show(this.width.ToString() + "x" + this.height.ToString());
             image.Width = this.width;
             image.Height = this.height;
             image.Source = this.GetFrameAsBitmapSource();
@@ -390,10 +485,20 @@ namespace camera
         /// <param name="pBuffer">Bytes da imamge</param>
         /// <param name="BufferLen">Tamanho do buffer</param>
         /// <returns></returns>
+        
+
+        private String b = "";
+
         int ISampleGrabberCB.BufferCB(double SampleTime, IntPtr pBuffer, int BufferLen)
         {
             // Note that we depend on only being called once per call to Click.  Otherwise
             // a second call can overwrite the previous image.
+
+            //if(b == "")
+            //{
+            //    MessageBox.Show("Stride = " + this.stride + ";\n" + "Width = " + this.width + ";\n" + "Height = " + this.height + "Bufferlen = " + BufferLen.ToString());
+            //}
+
             Debug.Assert(BufferLen == Math.Abs(stride) * height, "Incorrect buffer length");
             if (capturar)
             {

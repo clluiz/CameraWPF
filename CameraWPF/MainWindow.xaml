@@ -23,7 +23,7 @@
         </WindowsFormsHost>
         <Button Grid.Row="0" Grid.Column="1" Margin="10,10,282,174" Click="Button_Click"/>
 
-        <paint:ImageEditor Grid.Row="1" Grid.Column="0" x:Name="snap" Width="320" Height="180" Zoom="0.25" Color="red" ForceCursor="True" Cursor="Cross"/>
+        <paint:ImageEditor Grid.Row="1" Grid.Column="0" x:Name="snap" Width="320" Height="240" Zoom="0.25" Color="red" ForceCursor="True" Cursor="Cross"/>
 
         <Button Grid.Row="1" Grid.Column="1" Margin="59,45,313,123" Click="Button_Click_1">Salvar</Button>
         

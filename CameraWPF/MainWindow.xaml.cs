@@ -16,7 +16,6 @@ namespace CameraWPF
     /// </summary>
     public partial class MainWindow : Window
     {
-
         private DsDevice camera = null;
         public byte[] m_ip = null;
 
@@ -41,23 +40,11 @@ namespace CameraWPF
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-
-            // Release any previous buffer
-            if (m_ip != null)
-            {
-                m_ip = null;
-            }
-
-            // capture image
-            //snap.SetImage(captura.GetFrameAsImage());
-            Boolean b = snap.HasImage();
+            snap.SetImage(captura.GetFrameAsImage());
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            //snap.Source = captura.GetFrameAsImage();
-            //Capture.FlipVertical(snap);
-            //snap.Save("imagem.jpg");
             captura.SaveFrameToFile("foto.jpeg");
         }
     }
